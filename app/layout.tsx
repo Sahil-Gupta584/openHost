@@ -9,18 +9,21 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'EdgeOwn — Deploy Next.js on your own AWS',
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ?? 'https://openhost.app'
+  ),
+  title: 'OpenHost — Deploy Next.js on your own AWS',
   description:
     'Vercel-level developer experience, running entirely on your AWS account. Git push to deploy, preview branches, custom domains, instant rollbacks — you only pay AWS.',
   openGraph: {
-    title: 'EdgeOwn — Deploy Next.js on your own AWS',
+    title: 'OpenHost — Deploy Next.js on your own AWS',
     description:
       'Vercel-level DX on your own AWS. Pay pure AWS costs, no platform markup on compute or bandwidth.',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'EdgeOwn — Deploy Next.js on your own AWS',
+    title: 'OpenHost — Deploy Next.js on your own AWS',
     description:
       'Vercel-level DX on your own AWS. Pay pure AWS costs, no platform markup.',
   },

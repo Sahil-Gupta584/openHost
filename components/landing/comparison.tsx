@@ -1,47 +1,49 @@
 import { Check, X } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { Reveal } from '@/components/landing/reveal';
+import { SectionHeading } from '@/components/landing/section-heading';
 
 const rows = [
-  { label: 'Platform fee on compute', edgeown: 'None', vercel: '20%+' },
-  { label: 'Bandwidth markup', edgeown: 'None', vercel: '100GB then overage' },
+  { label: 'Platform fee on compute', openhost: 'None', vercel: '20%+' },
+  { label: 'Bandwidth markup', openhost: 'None', vercel: '100GB then overage' },
   {
     label: 'Serverless function overage',
-    edgeown: 'Pure AWS pricing',
+    openhost: 'Pure AWS pricing',
     vercel: '$40+/mo on Pro',
   },
   {
     label: 'Git push to deploy',
-    edgeown: true,
+    openhost: true,
     vercel: true,
   },
   {
     label: 'Preview deployments',
-    edgeown: true,
+    openhost: true,
     vercel: true,
   },
   {
     label: 'Custom domains + SSL',
-    edgeown: true,
+    openhost: true,
     vercel: true,
   },
   {
     label: 'Infrastructure ownership',
-    edgeown: 'Your AWS account',
+    openhost: 'Your AWS account',
     vercel: 'Vercel-owned',
   },
   {
     label: 'Data residency control',
-    edgeown: 'Full',
+    openhost: 'Full',
     vercel: 'Limited',
   },
   {
     label: 'Scales to zero',
-    edgeown: true,
+    openhost: true,
     vercel: true,
   },
   {
     label: 'Typical indie monthly cost',
-    edgeown: '$15–35',
+    openhost: '$15–35',
     vercel: '$50–60+',
   },
 ];
@@ -65,54 +67,49 @@ export function Comparison() {
   return (
     <section className="border-b border-border/60 py-24">
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-2xl text-center">
-          <p className="text-sm font-semibold uppercase tracking-wider text-primary">
-            The cost difference
-          </p>
-          <h2 className="mt-3 text-balance text-3xl font-bold tracking-tight sm:text-4xl">
-            Same DX. A fraction of the bill.
-          </h2>
-          <p className="mt-4 text-balance text-muted-foreground">
-            For a typical indie workload with moderate traffic, the savings add
-            up fast.
-          </p>
-        </div>
+        <SectionHeading
+          eyebrow="The cost difference"
+          title="Same DX. A fraction of the bill."
+          description="For a typical indie workload with moderate traffic, the savings add up fast."
+        />
 
-        <Card className="mt-12 overflow-hidden border-border/60">
-          <CardContent className="p-0">
-            <div className="grid grid-cols-3 border-b border-border/60 bg-secondary/30 text-sm font-semibold">
-              <div className="p-4 text-muted-foreground">Feature</div>
-              <div className="flex items-center justify-center gap-2 border-l border-border/60 p-4 text-primary">
-                <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground text-xs">
-                  E
-                </span>
-                EdgeOwn
-              </div>
-              <div className="flex items-center justify-center gap-2 border-l border-border/60 p-4 text-muted-foreground">
-                <span className="flex h-6 w-6 items-center justify-center rounded-md bg-foreground/80 text-background text-xs">
-                  V
-                </span>
-                Vercel Pro
-              </div>
-            </div>
-            {rows.map((row, i) => (
-              <div
-                key={row.label}
-                className={`grid grid-cols-3 text-sm ${
-                  i % 2 === 1 ? 'bg-secondary/10' : ''
-                }`}
-              >
-                <div className="p-4 text-muted-foreground">{row.label}</div>
-                <div className="flex items-center justify-center border-l border-border/60 p-4">
-                  <Cell value={row.edgeown} />
+        <Reveal delay={100}>
+          <Card className="mt-12 overflow-hidden border-border/60">
+            <CardContent className="p-0">
+              <div className="grid grid-cols-3 border-b border-border/60 bg-secondary/30 text-sm font-semibold">
+                <div className="p-4 text-muted-foreground">Feature</div>
+                <div className="flex items-center justify-center gap-2 border-l border-border/60 p-4 text-primary">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground text-xs">
+                    O
+                  </span>
+                  OpenHost
                 </div>
-                <div className="flex items-center justify-center border-l border-border/60 p-4">
-                  <Cell value={row.vercel} />
+                <div className="flex items-center justify-center gap-2 border-l border-border/60 p-4 text-muted-foreground">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-md bg-foreground/80 text-background text-xs">
+                    V
+                  </span>
+                  Vercel Pro
                 </div>
               </div>
-            ))}
-          </CardContent>
-        </Card>
+              {rows.map((row, i) => (
+                <div
+                  key={row.label}
+                  className={`group grid grid-cols-3 text-sm transition-colors ${
+                    i % 2 === 1 ? 'bg-secondary/10' : ''
+                  } hover:bg-secondary/25`}
+                >
+                  <div className="p-4 text-muted-foreground">{row.label}</div>
+                  <div className="flex items-center justify-center border-l border-border/60 p-4">
+                    <Cell value={row.openhost} />
+                  </div>
+                  <div className="flex items-center justify-center border-l border-border/60 p-4">
+                    <Cell value={row.vercel} />
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </Reveal>
 
         <p className="mt-4 text-center text-xs text-muted-foreground">
           Cost figures are illustrative estimates for a single Next.js app with

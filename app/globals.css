@@ -75,6 +75,28 @@
   html {
     scroll-behavior: smooth;
   }
+  ::selection {
+    background: hsl(var(--primary) / 0.3);
+    color: hsl(var(--foreground));
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: hsl(var(--border) / 0.7);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.4);
+    background-clip: content-box;
+  }
 }
 
 @layer utilities {
@@ -137,4 +159,20 @@
   border-radius: 9999px;
   background: hsl(var(--success));
   animation: pulse-ring 2s ease-out infinite;
+}
+
+/* Entrance animation for staggered hero / terminal lines. */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+  opacity: 0;
+  animation: fade-up 0.55s cubic-bezier(0.21, 1, 0.41, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up {
+    animation: none;
+    opacity: 1;
+  }
 }

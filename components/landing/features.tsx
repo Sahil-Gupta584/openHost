@@ -9,6 +9,8 @@ import {
   Zap,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Reveal } from '@/components/landing/reveal';
+import { SectionHeading } from '@/components/landing/section-heading';
 
 const features = [
   {
@@ -65,38 +67,37 @@ export function Features() {
   return (
     <section id="features" className="border-b border-border/60 py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-2xl text-center">
-          <p className="text-sm font-semibold uppercase tracking-wider text-primary">
-            Everything included
-          </p>
-          <h2 className="mt-3 text-balance text-3xl font-bold tracking-tight sm:text-4xl">
-            The Vercel flow you know, on infrastructure you own
-          </h2>
-          <p className="mt-4 text-balance text-muted-foreground">
-            From git integration to custom domains, EdgeOwn handles the entire
-            deploy pipeline. The only difference is where the bill goes.
-          </p>
-        </div>
+        <SectionHeading
+          eyebrow="Everything included"
+          title="The Vercel flow you know, on infrastructure you own"
+          description="From git integration to custom domains, OpenHost handles the entire deploy pipeline. The only difference is where the bill goes."
+        />
 
         <div className="mt-16 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {features.map((feature) => (
-            <Card
-              key={feature.title}
-              className="group relative overflow-hidden border-border/60 bg-card/50 transition-all hover:border-primary/40 hover:shadow-lg"
-            >
-              <div className="absolute inset-0 -z-10 bg-gradient-to-b from-primary/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
-              <CardHeader>
-                <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-border/60 bg-secondary/50 text-primary transition-colors group-hover:border-primary/40 group-hover:bg-primary/10">
-                  <feature.icon className="h-5 w-5" />
-                </div>
-                <CardTitle className="mt-4 text-lg">{feature.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm leading-relaxed text-muted-foreground">
-                  {feature.description}
-                </p>
-              </CardContent>
-            </Card>
+          {features.map((feature, i) => (
+            <Reveal key={feature.title} delay={i * 60} className="h-full">
+              <Card
+                className="group relative h-full overflow-hidden border-border/60 bg-card/50 transition-all after:pointer-events-none after:absolute after:inset-0 after:rounded-b-lg after:opacity-0 after:transition-opacity hover:after:opacity-100 hover:border-primary/40 hover:shadow-lg after:[background:linear-gradient(to_top,hsl(var(--primary)/0.06),transparent_40%)] motion-reduce:transition-none"
+              >
+                <div className="absolute inset-0 -z-10 bg-gradient-to-b from-primary/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-border/60 bg-secondary/50 text-primary transition-colors group-hover:border-primary/40 group-hover:bg-primary/10">
+                      <feature.icon className="h-5 w-5" />
+                    </div>
+                    <span className="font-mono text-xs text-muted-foreground/40 transition-colors group-hover:text-primary/60">
+                      {String(i + 1).padStart(2, '0')}
+                    </span>
+                  </div>
+                  <CardTitle className="mt-4 text-lg">{feature.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    {feature.description}
+                  </p>
+                </CardContent>
+              </Card>
+            </Reveal>
           ))}
         </div>
       </div>

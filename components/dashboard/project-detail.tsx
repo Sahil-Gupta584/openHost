@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { notFound } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -15,148 +15,108 @@ import {
   CheckCircle2,
   Clock,
   AlertCircle,
+  CircleSlash,
   RotateCcw,
   Plus,
   Trash2,
   Eye,
   EyeOff,
   Save,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
+  useProject,
+  type DeploymentItem,
+  type EnvVarItem,
+} from '@/hooks/use-project';
+import { timeAgo, formatDuration, cn } from '@/lib/utils';
 
-interface Deployment {
-  id: string;
-  hash: string;
-  branch: string;
-  commit: string;
-  message: string;
-  author: string;
-  time: string;
-  duration: string;
-  status: 'ready' | 'building' | 'error';
-}
+type StatusIcon = typeof CheckCircle2;
 
-const deployments: Deployment[] = [
-  {
-    id: 'd1',
-    hash: 'a1b2c3d',
-    branch: 'main',
-    commit: 'a1b2c3d',
-    message: 'feat: add pricing page',
-    author: 'kalashv',
-    time: '2 minutes ago',
-    duration: '94s',
-    status: 'ready',
-  },
-  {
-    id: 'd2',
-    hash: 'e4f5g6h',
-    branch: 'fix/header-overflow',
-    commit: 'e4f5g6h',
-    message: 'fix: header overflow on mobile',
-    author: 'kalashv',
-    time: '14 minutes ago',
-    duration: '88s',
-    status: 'ready',
-  },
-  {
-    id: 'd3',
-    hash: 'i7j8k9l',
-    branch: 'main',
-    commit: 'i7j8k9l',
-    message: 'chore: bump dependencies',
-    author: 'kalashv',
-    time: '1 hour ago',
-    duration: '102s',
-    status: 'ready',
-  },
-  {
-    id: 'd4',
-    hash: 'm0n1o2p',
-    branch: 'feature/auth',
-    commit: 'm0n1o2p',
-    message: 'wip: auth flow',
-    author: 'kalashv',
-    time: '3 hours ago',
-    duration: '76s',
-    status: 'error',
-  },
-  {
-    id: 'd5',
-    hash: 'q3r4s5t',
-    branch: 'main',
-    commit: 'q3r4s5t',
-    message: 'feat: initial commit',
-    author: 'kalashv',
-    time: '1 day ago',
-    duration: '121s',
-    status: 'ready',
-  },
-];
-
-const logLines = [
-  { t: '00:00', text: 'Cloning repository kalashv/saas-landing@main...', level: 'info' },
-  { t: '00:02', text: 'Detected Next.js 14 (App Router)', level: 'info' },
-  { t: '00:03', text: 'Installing dependencies (pnpm install)...', level: 'info' },
-  { t: '00:18', text: 'Dependencies installed in 15.2s', level: 'success' },
-  { t: '00:19', text: 'Running next build...', level: 'info' },
-  { t: '00:52', text: 'Compiled successfully (32 routes)', level: 'success' },
-  { t: '00:53', text: 'Uploading 1,204 static assets to S3...', level: 'info' },
-  { t: '01:12', text: 'Static assets uploaded (12.4 MB)', level: 'success' },
-  { t: '01:13', text: 'Packaging SSR functions for Lambda...', level: 'info' },
-  { t: '01:28', text: 'Lambda function updated (us-east-1)', level: 'success' },
-  { t: '01:29', text: 'Configuring CloudFront distribution...', level: 'info' },
-  { t: '01:31', text: 'CloudFront distribution deployed', level: 'success' },
-  { t: '01:32', text: 'Invalidating CDN cache...', level: 'info' },
-  { t: '01:34', text: 'Cache invalidated', level: 'success' },
-  { t: '01:34', text: 'Deployment ready at https://saas-landing.edgeown.app', level: 'success' },
-];
-
-const domains = [
-  {
-    domain: 'saas-landing.edgeown.app',
-    type: 'EdgeOwn subdomain',
-    status: 'Active',
-    primary: true,
-  },
-  {
-    domain: 'app.kalash.dev',
-    type: 'Custom domain',
-    status: 'Active',
-    primary: false,
-  },
-];
-
-const envVars = [
-  { key: 'DATABASE_URL', value: 'postgres://****@db.supabase.co', locked: true },
-  { key: 'STRIPE_SECRET_KEY', value: 'sk_live_************', locked: true },
-  { key: 'NEXT_PUBLIC_APP_URL', value: 'https://app.kalash.dev', locked: false },
-  { key: 'NEXT_PUBLIC_ANALYTICS_ID', value: 'UA-12345678-1', locked: false },
-];
-
-const statusConfig = {
+const statusConfig: Record<string, { label: string; icon: StatusIcon; className: string }> = {
   ready: { label: 'Ready', icon: CheckCircle2, className: 'text-success' },
+  queued: { label: 'Waiting', icon: Clock, className: 'text-muted-foreground' },
   building: { label: 'Building', icon: Clock, className: 'text-warning' },
   error: { label: 'Failed', icon: AlertCircle, className: 'text-destructive' },
 };
 
-export function ProjectDetail({ projectId }: { projectId: string }) {
-  const project = deployments.length > 0 ? { id: projectId, name: 'saas-landing' } : null;
-  if (!project) notFound();
+/** Manual deployments carry a 'pending' hash until the build reports the real commit. */
+const isPendingHash = (hash: string) => !/^[0-9a-f]{7,40}$/i.test(hash);
+const deployTitle = (d: DeploymentItem) =>
+  d.commit_message ?? (isPendingHash(d.commit_hash) ? 'Manual deploy' : d.commit_hash.slice(0, 7));
+const hashChip = (hash: string) => (isPendingHash(hash) ? 'manual deploy' : hash.slice(0, 7));
 
+export function ProjectDetail({ projectId }: { projectId: string }) {
+  const router = useRouter();
+  const project = useProject(projectId);
   const [tab, setTab] = useState('deployments');
+  const [deploying, setDeploying] = useState(false);
+
+  /** Trigger a new deployment and send the user to the live log. */
+  const deployNow = async () => {
+    setDeploying(true);
+    try {
+      const res = await fetch(`/api/projects/${projectId}/deploy`, { method: 'POST' });
+      const body = await res.json();
+      if (!res.ok) {
+        // e.g. already building → go watch the existing run.
+        router.push(`/dashboard/${projectId}`);
+        return;
+      }
+      router.push(`/dashboard/${projectId}/deployments/${body.data.deploymentId}`);
+    } finally {
+      setDeploying(false);
+    }
+  };
+
+  if (project.loading) {
+    return (
+      <div className="flex h-64 items-center justify-center text-muted-foreground">
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        Loading project...
+      </div>
+    );
+  }
+
+  if (project.error) {
+    return (
+      <div className="space-y-4">
+        <Link href="/dashboard">
+          <Button variant="ghost" size="sm" className="gap-1.5">
+            <ArrowLeft className="h-4 w-4" />
+            Back to projects
+          </Button>
+        </Link>
+        <p className="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {project.error}
+        </p>
+      </div>
+    );
+  }
+
+  if (!project.data) {
+    return (
+      <div className="space-y-4">
+        <Link href="/dashboard">
+          <Button variant="ghost" size="sm" className="gap-1.5">
+            <ArrowLeft className="h-4 w-4" />
+            Back to projects
+          </Button>
+        </Link>
+        <p className="text-muted-foreground">Project not found.</p>
+      </div>
+    );
+  }
+
+  const { data } = project;
+  const latest = data.latest;
+  const latestStatus = statusConfig[latest?.status ?? ''] ?? statusConfig.ready!;
 
   return (
     <div className="space-y-6">
@@ -171,23 +131,86 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
             <Github className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight">{project.name}</h1>
-            <p className="text-sm text-muted-foreground">kalashv/saas-landing</p>
+            <h1 className="text-xl font-bold tracking-tight">{data.project.name}</h1>
+            <p className="text-sm text-muted-foreground">{data.project.repo}</p>
           </div>
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <a href="https://saas-landing.edgeown.app" target="_blank" rel="noopener noreferrer">
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <ExternalLink className="h-4 w-4" />
-              Visit
-            </Button>
-          </a>
-          <Button size="sm" variant="outline" className="gap-1.5">
-            <RotateCcw className="h-4 w-4" />
-            Redeploy
+          <Button size="sm" className="gap-1.5" onClick={() => void deployNow()} disabled={deploying}>
+            {deploying ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+            Deploy
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            className="gap-1.5"
+            onClick={() => {
+              if (!confirm('Delete this project and its AWS resources?')) return;
+              void project
+                .deleteProject()
+                .then(() => {
+                  window.location.href = '/dashboard';
+                })
+                .catch((e) => console.error('[OpenHost] delete failed', e));
+            }}
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete
           </Button>
         </div>
       </div>
+
+      {latest && (
+        <p
+          className={cn(
+            'flex items-center gap-2 text-sm',
+            latestStatus.className,
+            latest.status === 'error' && 'text-destructive'
+          )}
+        >
+          {latest.status === 'building' || latest.status === 'queued' ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <Link
+                href={`/dashboard/${projectId}/deployments/${latest.id}`}
+                className="underline-offset-2 hover:underline"
+              >
+                {latest.status === 'queued'
+                  ? 'Waiting for AWS build capacity — it starts automatically'
+                  : 'Deployment in progress — watch it live'}
+              </Link>
+            </>
+          ) : (
+            <>
+              <latestStatus.icon className="h-4 w-4" />
+              <span>
+                Latest deploy {latestStatus.label.toLowerCase()} · {deployTitle(latest)} ·{' '}
+                {timeAgo(latest.created_at)}
+                {latest.duration_ms != null && <> · built in {formatDuration(latest.duration_ms)}</>}
+              </span>
+              {latest.status === 'ready' && (
+                <>
+                  <a
+                    href={`/~/${projectId}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="ml-1 inline-flex items-center gap-1 rounded bg-success/10 px-2 py-0.5 font-medium text-success hover:bg-success/20"
+                    title="Open the live deployment served through OpenHost"
+                  >
+                    Visit <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                  <a
+                    href={`/dashboard/${projectId}/deployments/${latest.id}`}
+                    className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+                  >
+                    details
+                  </a>
+                </>
+              )}
+            </>
+          )}
+        </p>
+      )}
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
@@ -214,30 +237,56 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
         </TabsList>
 
         <TabsContent value="deployments" className="mt-6">
-          <DeploymentsTab />
+          <DeploymentsTab deployments={data.deployments} projectId={projectId} />
         </TabsContent>
         <TabsContent value="logs" className="mt-6">
-          <LogsTab />
+          <LogsTab latest={data.latest} />
         </TabsContent>
         <TabsContent value="domains" className="mt-6">
-          <DomainsTab />
+          <DomainsTab
+            projectId={projectId}
+            domains={data.domains}
+            onAdd={(d) => void project.addDomain(d)}
+            onRemove={(d) => void project.deleteDomain(d)}
+            error={project.mutationError}
+          />
         </TabsContent>
         <TabsContent value="env" className="mt-6">
-          <EnvVarsTab />
+          <EnvVarsTab
+            envVars={data.envVars}
+            onSave={(kv) => void project.saveEnvVar(kv)}
+            onDelete={(key) => void project.deleteEnvVar(key)}
+            error={project.mutationError}
+          />
         </TabsContent>
         <TabsContent value="settings" className="mt-6">
-          <SettingsTab />
+          <SettingsTab
+            project={data.project}
+            onSave={(patch) => void project.updateProject(patch)}
+          />
         </TabsContent>
       </Tabs>
     </div>
   );
 }
 
-function DeploymentsTab() {
+function DeploymentsTab({ deployments, projectId }: { deployments: DeploymentItem[]; projectId: string }) {
+  if (deployments.length === 0) {
+    return (
+      <div className="rounded-lg border border-dashed border-border/60 py-16 text-center">
+        <p className="text-muted-foreground">No deployments yet. Hit "Deploy" above to start one.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3">
       {deployments.map((d) => {
-        const status = statusConfig[d.status];
+        const status = statusConfig[d.status] ?? {
+          label: d.status,
+          icon: CircleSlash,
+          className: 'text-muted-foreground',
+        };
         const StatusIcon = status.icon;
         return (
           <Card key={d.id} className="border-border/60 transition-colors hover:border-border">
@@ -249,29 +298,37 @@ function DeploymentsTab() {
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="truncate font-medium text-sm">{d.message}</span>
+                  <Link
+                    href={`/dashboard/${projectId}/deployments/${d.id}`}
+                    className="truncate text-sm font-medium hover:text-primary hover:underline underline-offset-2"
+                  >
+                    {deployTitle(d)}
+                  </Link>
+                  {d.status === 'ready' && d.production_url && (
+                    <a
+                      href={`/~/${projectId}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      title="Open the live deployment"
+                      className="inline-flex items-center gap-1 rounded bg-success/10 px-1.5 py-0.5 text-[10px] font-medium text-success hover:bg-success/20"
+                    >
+                      Visit <ExternalLink className="h-3 w-3" />
+                    </a>
+                  )}
                 </div>
                 <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                  <span className="font-mono">{d.commit}</span>
+                  <span className="font-mono">{hashChip(d.commit_hash)}</span>
                   <Badge variant="secondary" className="font-mono text-[10px]">
                     {d.branch}
                   </Badge>
-                  <span>by {d.author}</span>
-                  <span>{d.time}</span>
-                  <span>built in {d.duration}</span>
+                  {d.author && <span>by {d.author}</span>}
+                  <span>{timeAgo(d.created_at)}</span>
+                  <span>built in {formatDuration(d.duration_ms)}</span>
                 </div>
               </div>
-              <div className="hidden items-center gap-2 sm:flex">
-                {d.status === 'ready' && (
-                  <Button variant="ghost" size="sm" className="gap-1.5">
-                    <RotateCcw className="h-3.5 w-3.5" />
-                    Rollback
-                  </Button>
-                )}
-                <Button variant="ghost" size="sm">
-                  Visit
-                </Button>
-              </div>
+              <span className={`hidden text-sm font-medium sm:block ${status.className}`}>
+                {status.label}
+              </span>
             </CardContent>
           </Card>
         );
@@ -280,7 +337,17 @@ function DeploymentsTab() {
   );
 }
 
-function LogsTab() {
+function LogsTab({ latest }: { latest: DeploymentItem | null }) {
+  if (!latest) {
+    return (
+      <div className="rounded-lg border border-dashed border-border/60 py-16 text-center">
+        <p className="text-muted-foreground">No build logs yet.</p>
+      </div>
+    );
+  }
+
+  const lines = (latest.build_logs ?? '').split('\n');
+
   return (
     <Card className="overflow-hidden border-border/60">
       <CardHeader className="border-b border-border/60 py-3">
@@ -288,85 +355,146 @@ function LogsTab() {
           <div>
             <CardTitle className="text-sm">Build logs</CardTitle>
             <CardDescription className="text-xs">
-              Latest deployment &middot; a1b2c3d &middot; 94s
+              Deployment {deployTitle(latest).toLowerCase()} &middot;{' '}
+              {formatDuration(latest.duration_ms)}
             </CardDescription>
           </div>
-          <Badge className="bg-success/15 text-success hover:bg-success/15">
-            <CheckCircle2 className="mr-1 h-3 w-3" />
-            Success
+          <Badge
+            className={
+              latest.status === 'error'
+                ? 'bg-destructive/15 text-destructive hover:bg-destructive/15'
+                : 'bg-success/15 text-success hover:bg-success/15'
+            }
+          >
+            <LogStatusIcon status={latest.status} className="mr-1 h-3 w-3" />
+            {latest.status === 'error'
+              ? 'Failed'
+              : latest.status === 'queued'
+                ? 'Queued'
+                : latest.status === 'building'
+                  ? 'Building'
+                  : 'Success'}
           </Badge>
         </div>
       </CardHeader>
       <CardContent className="bg-secondary/20 p-0">
-        <div className="h-[480px] overflow-y-auto p-4 font-mono text-xs leading-relaxed">
-          {logLines.map((line, i) => (
-            <div key={i} className="flex gap-3 py-0.5">
-              <span className="shrink-0 text-muted-foreground/50">{line.t}</span>
-              <span
-                className={
-                  line.level === 'success'
-                    ? 'text-success'
-                    : line.level === 'error'
-                    ? 'text-destructive'
-                    : 'text-foreground/80'
-                }
-              >
-                {line.text}
-              </span>
+        <div className="h-[420px] overflow-y-auto p-4 font-mono text-xs leading-relaxed">
+          {lines.map((line, i) => (
+            <div key={i} className="flex gap-3 py-0.5 text-foreground/80">
+              <span className="shrink-0 text-muted-foreground/50">{String(i + 1).padStart(2, '0')}</span>
+              <span>{line}</span>
             </div>
           ))}
-          <div className="flex gap-3 py-0.5">
-            <span className="text-primary">$</span>
-            <span className="inline-block h-4 w-2 animate-pulse bg-primary" />
-          </div>
         </div>
       </CardContent>
     </Card>
   );
 }
 
-function DomainsTab() {
+function LogStatusIcon({ status, className }: { status: string; className?: string }) {
+  const Icon = statusConfig[status]?.icon ?? CircleSlash;
+  return <Icon className={className} />;
+}
+
+function DomainsTab({
+  projectId,
+  domains,
+  onAdd,
+  onRemove,
+  error,
+}: {
+  projectId: string;
+  domains: { id: string; domain: string; type: string; status: string }[];
+  onAdd: (domain: string) => void;
+  onRemove: (domain: string) => void;
+  error: string | null;
+}) {
+  const [newDomain, setNewDomain] = useState('');
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="font-semibold">Domains</h3>
-          <p className="text-sm text-muted-foreground">
-            Manage domains and automatic SSL certificates.
-          </p>
+      <form
+        className="flex items-end gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!newDomain.trim()) return;
+          onAdd(newDomain.trim());
+          setNewDomain('');
+        }}
+      >
+        <div className="flex-1 space-y-2">
+          <Label htmlFor="new-domain">Custom domain</Label>
+          <Input
+            id="new-domain"
+            placeholder="app.example.com"
+            value={newDomain}
+            onChange={(e) => setNewDomain(e.target.value)}
+          />
         </div>
-        <Button size="sm" className="gap-1.5">
+        <Button type="submit" size="sm" className="gap-1.5">
           <Plus className="h-4 w-4" />
           Add domain
         </Button>
-      </div>
+      </form>
+
+      {error && <p className="text-xs text-destructive">{error}</p>}
 
       <div className="space-y-3">
+        <Card className="border-border/60">
+          <CardContent className="flex items-center justify-between p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-border/60 bg-secondary/40 text-muted-foreground">
+                <Globe className="h-4 w-4" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">/{'~'}/{projectId}</span>
+                  <Badge variant="secondary" className="text-[10px]">
+                    Production
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Path URL — served by OpenHost, backed by your AWS origin
+                </p>
+              </div>
+            </div>
+            <a
+              href={`/~/${projectId}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 text-xs text-success hover:underline"
+            >
+              Visit <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          </CardContent>
+        </Card>
+
         {domains.map((d) => (
-          <Card key={d.domain} className="border-border/60">
+          <Card key={d.id} className="border-border/60">
             <CardContent className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3">
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-border/60 bg-secondary/40 text-muted-foreground">
                   <Globe className="h-4 w-4" />
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm">{d.domain}</span>
-                    {d.primary && (
-                      <Badge variant="secondary" className="text-[10px]">
-                        Primary
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground">{d.type}</p>
+                  <span className="text-sm font-medium">{d.domain}</span>
+                  <p className="text-xs text-muted-foreground">
+                    Custom domain &middot; {d.status === 'active' ? 'active' : 'pending DNS'}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <span className="flex items-center gap-1.5 text-sm text-success">
-                  <CheckCircle2 className="h-4 w-4" />
-                  {d.status}
-                </span>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive">
+                {d.status === 'active' ? (
+                  <CheckCircle2 className="h-4 w-4 text-success" />
+                ) : (
+                  <CircleSlash className="h-4 w-4 text-muted-foreground" />
+                )}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                  onClick={() => onRemove(d.domain)}
+                >
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
@@ -378,64 +506,112 @@ function DomainsTab() {
   );
 }
 
-function EnvVarsTab() {
+function EnvVarsTab({
+  envVars,
+  onSave,
+  onDelete,
+  error,
+}: {
+  envVars: EnvVarItem[];
+  onSave: (kv: { key: string; value: string; isSecret: boolean }) => void;
+  onDelete: (key: string) => void;
+  error: string | null;
+}) {
   const [visible, setVisible] = useState<Record<string, boolean>>({});
-  const toggle = (key: string) =>
-    setVisible((v) => ({ ...v, [key]: !v[key] }));
+  const [newKey, setNewKey] = useState('');
+  const [newValue, setNewValue] = useState('');
+  const toggle = (key: string) => setVisible((v) => ({ ...v, [key]: !v[key] }));
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="font-semibold">Environment variables</h3>
-          <p className="text-sm text-muted-foreground">
-            Encrypted at rest. Applied to production and preview deployments.
-          </p>
+      <form
+        className="flex flex-col gap-2 sm:flex-row sm:items-end"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!newKey.trim() || !newValue.trim()) return;
+          onSave({ key: newKey.trim(), value: newValue, isSecret: false });
+          setNewKey('');
+          setNewValue('');
+        }}
+      >
+        <div className="w-48 space-y-1.5">
+          <Label htmlFor="new-env-key">Key</Label>
+          <Input id="new-env-key" placeholder="MY_VAR" value={newKey} onChange={(e) => setNewKey(e.target.value)} />
         </div>
-        <Button size="sm" className="gap-1.5">
+        <div className="flex-1 space-y-1.5">
+          <Label htmlFor="new-env-value">Value</Label>
+          <Input id="new-env-value" placeholder="…" value={newValue} onChange={(e) => setNewValue(e.target.value)} />
+        </div>
+        <Button type="submit" size="sm" className="gap-1.5">
           <Plus className="h-4 w-4" />
           Add variable
         </Button>
-      </div>
+      </form>
+
+      {error && <p className="text-xs text-destructive">{error}</p>}
 
       <Card className="border-border/60">
-        <CardContent className="divide-y divide-border/60 p-0">
-          {envVars.map((env) => (
-            <div key={env.key} className="flex items-center gap-3 p-4">
-              <div className="w-48 shrink-0 font-mono text-sm">{env.key}</div>
-              <div className="flex-1 font-mono text-sm text-muted-foreground">
-                {visible[env.key] ? env.value : '••••••••••••••••'}
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => toggle(env.key)}
-              >
-                {visible[env.key] ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-destructive"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+        <CardContent className="p-0">
+          {envVars.length === 0 ? (
+            <p className="p-8 text-center text-sm text-muted-foreground">
+              No environment variables yet.
+            </p>
+          ) : (
+            <div className="divide-y divide-border/60">
+              {envVars.map((env) => (
+                <div key={env.id} className="flex items-center gap-3 p-4">
+                  <div className="w-48 shrink-0 truncate font-mono text-sm">{env.key}</div>
+                  <div className="flex-1 font-mono text-sm text-muted-foreground">
+                    {env.is_secret && !visible[env.id] ? '••••••••••••••••' : env.value}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => toggle(env.id)}
+                  >
+                    {visible[env.id] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                    onClick={() => onDelete(env.key)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </CardContent>
       </Card>
     </div>
   );
 }
 
-function SettingsTab() {
+function SettingsTab({
+  project,
+  onSave,
+}: {
+  project: { name: string; branch: string; region: string };
+  onSave: (patch: { name?: string; branch?: string; region?: string }) => void;
+}) {
+  const [name, setName] = useState(project.name);
+  const [branch, setBranch] = useState(project.branch);
+  const [region, setRegion] = useState(project.region);
+  const [saved, setSaved] = useState(false);
+
   return (
-    <div className="max-w-2xl space-y-6">
+    <form
+      className="max-w-2xl space-y-6"
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSave({ name, branch, region });
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      }}
+    >
       <Card className="border-border/60">
         <CardHeader>
           <CardTitle className="text-base">General</CardTitle>
@@ -444,37 +620,25 @@ function SettingsTab() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Project name</Label>
-            <Input id="name" defaultValue="saas-landing" />
+            <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="branch">Production branch</Label>
-            <Input id="branch" defaultValue="main" />
+            <Input id="branch" value={branch} onChange={(e) => setBranch(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="region">AWS region</Label>
-            <Input id="region" defaultValue="us-east-1" />
+            <Input id="region" value={region} onChange={(e) => setRegion(e.target.value)} />
           </div>
-          <Button size="sm" className="gap-1.5">
-            <Save className="h-4 w-4" />
-            Save changes
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button type="submit" size="sm" className="gap-1.5">
+              <Save className="h-4 w-4" />
+              Save changes
+            </Button>
+            {saved && <span className="text-xs text-success">Saved.</span>}
+          </div>
         </CardContent>
       </Card>
-
-      <Card className="border-destructive/30">
-        <CardHeader>
-          <CardTitle className="text-base text-destructive">Danger zone</CardTitle>
-          <CardDescription>
-            Deleting a project removes all deployments from your AWS account.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button variant="destructive" size="sm" className="gap-1.5">
-            <Trash2 className="h-4 w-4" />
-            Delete project
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
+    </form>
   );
 }

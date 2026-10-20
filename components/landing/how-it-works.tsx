@@ -1,4 +1,6 @@
 import { GitBranch, Cloud, Rocket, Globe } from 'lucide-react';
+import { Reveal } from '@/components/landing/reveal';
+import { SectionHeading } from '@/components/landing/section-heading';
 
 const steps = [
   {
@@ -12,7 +14,7 @@ const steps = [
     icon: GitBranch,
     title: 'Import a Git repository',
     description:
-      'Pick a repo from GitHub or GitLab. EdgeOwn auto-detects Next.js and configures the optimal build pipeline.',
+      'Pick a repo from GitHub or GitLab. OpenHost auto-detects Next.js and configures the optimal build pipeline.',
     badge: 'Step 02',
   },
   {
@@ -39,22 +41,16 @@ export function HowItWorks() {
     >
       <div className="absolute inset-0 -z-10 bg-dots opacity-20" />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-2xl text-center">
-          <p className="text-sm font-semibold uppercase tracking-wider text-primary">
-            How it works
-          </p>
-          <h2 className="mt-3 text-balance text-3xl font-bold tracking-tight sm:text-4xl">
-            From git push to global in four steps
-          </h2>
-          <p className="mt-4 text-balance text-muted-foreground">
-            No AWS certification required. The whole setup takes about five
-            minutes.
-          </p>
-        </div>
+        <SectionHeading
+          eyebrow="How it works"
+          title="From git push to global in four steps"
+          description="No AWS certification required. The whole setup takes about five minutes."
+        />
 
         <div className="mt-16 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
           {steps.map((step, i) => (
-            <div key={step.title} className="relative">
+            <Reveal key={step.title} delay={i * 80}>
+              <div className="relative">
               {i < steps.length - 1 && (
                 <div className="absolute left-[2.75rem] top-14 hidden h-px w-[calc(100%-2rem)] bg-gradient-to-r from-border to-transparent lg:block" />
               )}
@@ -71,7 +67,8 @@ export function HowItWorks() {
               <span className="mt-3 inline-block font-mono text-xs text-muted-foreground/60">
                 {step.badge}
               </span>
-            </div>
+              </div>
+            </Reveal>
           ))}
         </div>
       </div>

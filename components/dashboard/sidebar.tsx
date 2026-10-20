@@ -6,16 +6,14 @@ import {
   Cloud,
   LayoutGrid,
   Settings,
-  CreditCard,
-  BookOpen,
-  LifeBuoy,
+  Activity,
   ChevronLeft,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { label: 'Projects', href: '/dashboard', icon: LayoutGrid },
-  { label: 'Billing', href: '/dashboard/billing', icon: CreditCard },
+  { label: 'Usage', href: '/dashboard/usage', icon: Activity },
   { label: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
@@ -29,7 +27,7 @@ export function DashboardSidebar() {
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Cloud className="h-4 w-4" />
           </div>
-          <span className="font-semibold tracking-tight">EdgeOwn</span>
+          <span className="font-semibold tracking-tight">OpenHost</span>
         </Link>
       </div>
 
@@ -47,35 +45,20 @@ export function DashboardSidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                'relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
                 active
                   ? 'bg-primary/10 text-primary'
                   : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
               )}
             >
+              {active && (
+                <span className="absolute -left-3 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-primary" />
+              )}
               <item.icon className="h-4 w-4" />
               {item.label}
             </Link>
           );
         })}
-
-        <p className="px-3 pb-2 pt-6 text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
-          Resources
-        </p>
-        <Link
-          href="/#"
-          className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground"
-        >
-          <BookOpen className="h-4 w-4" />
-          Documentation
-        </Link>
-        <Link
-          href="/#"
-          className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground"
-        >
-          <LifeBuoy className="h-4 w-4" />
-          Support
-        </Link>
       </nav>
 
       <div className="border-t border-border/60 p-4">
@@ -86,11 +69,9 @@ export function DashboardSidebar() {
           <ChevronLeft className="h-4 w-4" />
           Back to site
         </Link>
-      </div>
 
-      <div className="border-t border-border/60 p-4">
-        <div className="flex items-center gap-3 rounded-lg bg-secondary/40 p-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-xs font-bold text-primary-foreground">
+        <div className="mt-4 flex items-center gap-3 rounded-lg bg-secondary/40 p-3">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-xs font-bold text-primary-foreground">
             KV
           </div>
           <div className="min-w-0 flex-1">

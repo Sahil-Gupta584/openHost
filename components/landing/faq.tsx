@@ -7,11 +7,12 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import { SectionHeading } from '@/components/landing/section-heading';
 
 const faqs = [
   {
-    q: 'Do I need to know AWS to use EdgeOwn?',
-    a: 'No. You create an IAM role with our one-click CloudFormation template — that is the extent of AWS knowledge required. EdgeOwn handles all infrastructure provisioning, builds, and deployments automatically.',
+    q: 'Do I need to know AWS to use OpenHost?',
+    a: 'No. You create an IAM role with our one-click CloudFormation template — that is the extent of AWS knowledge required. OpenHost handles all infrastructure provisioning, builds, and deployments automatically.',
   },
   {
     q: 'Where does my code and data actually live?',
@@ -19,14 +20,14 @@ const faqs = [
   },
   {
     q: 'How is this cheaper than Vercel?',
-    a: 'Vercel charges a platform fee on top of compute, bandwidth, and function execution, plus overage charges on Pro plans. EdgeOwn charges a flat platform fee — you pay AWS directly for infrastructure at AWS retail prices, which for typical indie workloads runs $15–35/month.',
+    a: 'Vercel charges a platform fee on top of compute, bandwidth, and function execution, plus overage charges on Pro plans. OpenHost charges a flat platform fee — you pay AWS directly for infrastructure at AWS retail prices, which for typical indie workloads runs $15–35/month.',
   },
   {
     q: 'Does it support the full Next.js feature set?',
-    a: 'Yes. We use OpenNext to deploy SSR, ISR, API routes, Middleware, Server Actions, Route Handlers, and static export. If it runs on Vercel, it should deploy on EdgeOwn.',
+    a: 'Yes. We use OpenNext to deploy SSR, ISR, API routes, Middleware, Server Actions, Route Handlers, and static export. If it runs on Vercel, it should deploy on OpenHost.',
   },
   {
-    q: 'What happens if I want to leave EdgeOwn?',
+    q: 'What happens if I want to leave OpenHost?',
     a: 'Since all infrastructure lives in your AWS account, you keep everything. The S3 buckets, Lambda functions, and CloudFront distributions are yours. You can manage them directly via the AWS console or switch to another tool at any time.',
   },
   {
@@ -35,7 +36,7 @@ const faqs = [
   },
   {
     q: 'Is my AWS account access secure?',
-    a: 'We use OIDC for authentication, meaning no long-lived access keys. Access is granted via a least-privilege IAM role scoped only to the resources EdgeOwn manages. You can revoke access at any time by deleting the role.',
+    a: 'We use OIDC for authentication, meaning no long-lived access keys. Access is granted via a least-privilege IAM role scoped only to the resources OpenHost manages. You can revoke access at any time by deleting the role.',
   },
 ];
 
@@ -45,14 +46,7 @@ export function FAQ() {
   return (
     <section className="border-b border-border/60 py-24">
       <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center">
-          <p className="text-sm font-semibold uppercase tracking-wider text-primary">
-            FAQ
-          </p>
-          <h2 className="mt-3 text-balance text-3xl font-bold tracking-tight sm:text-4xl">
-            Questions, answered
-          </h2>
-        </div>
+        <SectionHeading eyebrow="FAQ" title="Questions, answered" />
 
         <Accordion
           type="single"

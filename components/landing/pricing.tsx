@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Reveal } from '@/components/landing/reveal';
+import { SectionHeading } from '@/components/landing/section-heading';
 
 const tiers = [
   {
@@ -11,7 +13,7 @@ const tiers = [
     features: [
       '1 project',
       'Unlimited preview deployments',
-      'Free edgeown.app subdomain',
+      'Free /~/ path URL (public, instant)',
       'Community support',
       'AWS costs billed directly by Amazon',
     ],
@@ -53,29 +55,22 @@ export function Pricing() {
   return (
     <section id="pricing" className="border-b border-border/60 py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-2xl text-center">
-          <p className="text-sm font-semibold uppercase tracking-wider text-primary">
-            Pricing
-          </p>
-          <h2 className="mt-3 text-balance text-3xl font-bold tracking-tight sm:text-4xl">
-            You pay AWS. We charge a flat platform fee.
-          </h2>
-          <p className="mt-4 text-balance text-muted-foreground">
-            No compute markup, no bandwidth markup, no function overages. The
-            only variable cost is what AWS bills you directly.
-          </p>
-        </div>
+        <SectionHeading
+          eyebrow="Pricing"
+          title="You pay AWS. We charge a flat platform fee."
+          description="No compute markup, no bandwidth markup, no function overages. The only variable cost is what AWS bills you directly."
+        />
 
         <div className="mx-auto mt-14 grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-3">
-          {tiers.map((tier) => (
-            <Card
-              key={tier.name}
-              className={`relative flex flex-col border-border/60 transition-all ${
-                tier.highlight
-                  ? 'border-primary/50 shadow-xl glow-primary'
-                  : 'hover:border-border'
-              }`}
-            >
+          {tiers.map((tier, i) => (
+            <Reveal key={tier.name} delay={i * 90} className="h-full">
+              <Card
+                className={`relative flex h-full flex-col border-border/60 transition-all motion-reduce:transition-none ${
+                  tier.highlight
+                    ? 'border-primary/50 shadow-xl glow-primary'
+                    : 'hover:border-border'
+                }`}
+              >
               {tier.highlight && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">
                   Most popular
@@ -116,12 +111,13 @@ export function Pricing() {
                   </Button>
                 </Link>
               </CardContent>
-            </Card>
+              </Card>
+            </Reveal>
           ))}
         </div>
 
         <p className="mt-8 text-center text-sm text-muted-foreground">
-          All plans include the full EdgeOwn deploy pipeline. AWS infrastructure
+          All plans include the full OpenHost deploy pipeline. AWS infrastructure
           costs are billed separately by Amazon Web Services.
         </p>
       </div>

@@ -55,7 +55,7 @@ export function Footer() {
                 <Cloud className="h-5 w-5" />
               </div>
               <span className="text-lg font-semibold tracking-tight">
-                EdgeOwn
+                OpenHost
               </span>
             </Link>
             <p className="mt-4 max-w-xs text-sm text-muted-foreground">
@@ -101,9 +101,16 @@ export function Footer() {
 
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-border/60 pt-6 sm:flex-row">
           <p className="text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} EdgeOwn. All rights reserved.
+            &copy; {new Date().getFullYear()} OpenHost. All rights reserved.
           </p>
-          <div className="flex gap-6 text-sm text-muted-foreground">
+          <div className="flex items-center gap-6 text-sm text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5 font-mono text-xs">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
+              </span>
+              All systems operational
+            </span>
             <Link href="/#" className="hover:text-foreground">
               Privacy
             </Link>
