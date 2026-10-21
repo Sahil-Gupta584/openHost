@@ -10,8 +10,8 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
  * client components only talk to those routes. No NEXT_PUBLIC_* vars.
  */
 export function getSupabaseAuthConfig(): { url: string; anonKey: string } {
-  const url = process.env.SUPABASE_URL;
-  const anonKey = process.env.SUPABASE_ANON_KEY;
+  const url = process.env.SUPABASE_URL||'';
+  const anonKey = process.env.SUPABASE_ANON_KEY||'';
 
   if (!url || !anonKey) {
     // throw new Error(
