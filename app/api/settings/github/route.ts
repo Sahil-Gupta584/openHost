@@ -6,19 +6,36 @@ import {
   saveGithubToken,
   storedGithubToken,
   testToken,
+  tokenIdentity,
 } from '@/lib/services/github';
 
 export const dynamic = 'force-dynamic';
 
-/** GET /api/settings/github — masked status (never returns the raw token). */
+/** GET /api/settings/github — connected account + masked status (never the raw token). */
 export async function GET() {
   return handle(async () => {
     const stored = await storedGithubToken();
     const active = stored ?? process.env.GITHUB_TOKEN ?? null;
+
+    if (!active) {
+      return {
+        connected: false,
+        source: 'none' as const,
+        masked: null,
+        login: null,
+        name: null,
+        avatarUrl: null,
+      };
+    }
+
+    const identity = await tokenIdentity(active);
     return {
-      connected: Boolean(active),
-      source: stored ? 'database' : process.env.GITHUB_TOKEN ? 'env' : 'none',
-      masked: active ? maskToken(active) : null,
+      connected: Boolean(identity),
+      source: stored ? ('database' as const) : ('env' as const),
+      masked: maskToken(active),
+      login: identity?.login ?? null,
+      name: identity?.name ?? null,
+      avatarUrl: identity?.avatarUrl ?? null,
     };
   });
 }

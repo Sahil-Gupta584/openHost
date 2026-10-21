@@ -1,11 +1,19 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Inter, JetBrains_Mono } from 'next/font/google';
+import { Archivo, IBM_Plex_Mono, Instrument_Serif } from 'next/font/google';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
-const jetbrains = JetBrains_Mono({
+// Warm-ink theme: Archivo (body) · Instrument Serif (display) · IBM Plex Mono (eyebrow labels)
+const archivo = Archivo({ subsets: ['latin'], variable: '--font-sans' });
+const plexMono = IBM_Plex_Mono({
   subsets: ['latin'],
+  weight: ['400', '500'],
   variable: '--font-mono',
+});
+const instrumentSerif = Instrument_Serif({
+  subsets: ['latin'],
+  weight: '400',
+  style: ['normal', 'italic'],
+  variable: '--font-display',
 });
 
 export const metadata: Metadata = {
@@ -15,6 +23,12 @@ export const metadata: Metadata = {
   title: 'OpenHost — Deploy Next.js on your own AWS',
   description:
     'Vercel-level developer experience, running entirely on your AWS account. Git push to deploy, preview branches, custom domains, instant rollbacks — you only pay AWS.',
+  themeColor: '#0A0A0A',
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/favicon.ico',
+  },
   openGraph: {
     title: 'OpenHost — Deploy Next.js on your own AWS',
     description:
@@ -37,7 +51,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body
-        className={`${inter.variable} ${jetbrains.variable} font-sans antialiased`}
+        className={`${archivo.variable} ${plexMono.variable} ${instrumentSerif.variable} font-sans antialiased`}
         suppressHydrationWarning
       >
         {children}

@@ -15,10 +15,10 @@ export function SectionHeading({
 }) {
   return (
     <Reveal className="mx-auto max-w-2xl text-center">
-      <span className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/5 px-3.5 py-1 text-xs font-semibold uppercase tracking-wider text-primary">
+      <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
         {eyebrow}
-      </span>
-      <h2 className="mt-4 text-balance text-3xl font-bold tracking-tight sm:text-4xl">
+      </p>
+      <h2 className="mt-4 text-balance font-display text-3xl font-normal leading-[1.1] tracking-[-0.02em] sm:text-5xl">
         {title}
       </h2>
       {description ? (

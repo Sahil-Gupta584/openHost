@@ -1,0 +1,4 @@
+ts=2026-10-21 axis=theming scope=global decision=centralize color:radius:font:shadow tokens in app/globals.css (shadcn pattern); tailwind.config.ts maps vars only status=resolved source=user
+ts=2026-10-21 axis=logo scope=global decision=public/favicon.ico is the single brand-mark source of truth; components/logo.tsx (OpenHostMark) is the only render path; favicon derived metadata points at the same asset status=resolved source=user ("keep favicon.ico as source of truth for logos")
+ts=2026-10-21 axis=palette scope=landing decision=warm-ink tokens extracted from excerpt-rho vercel CSS (ground #0A0A0A, ink #F4F3F1, paper #F1F0DD, ember #FF4D0F) status=pending-review source=autonomous-pass
+ts=2026-10-21 axis=type scope=global decision=Archivo body / Instrument Serif display / IBM Plex Mono labels status=pending-review source=autonomous-pass

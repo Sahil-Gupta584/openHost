@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { Github, ArrowRight, Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { Github, ArrowRight, Loader2, GitBranch, Lock } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -13,6 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import type { CreateProjectInput } from '@/hooks/use-projects';
 import { parseRepoInput, slugifyProjectName } from '@/lib/utils/repo';
 
@@ -21,6 +23,14 @@ interface NewProjectDialogProps {
   onOpenChange: (open: boolean) => void;
   /** Backend action from the projects hook; caller owns list refresh. */
   onCreate: (input: CreateProjectInput) => Promise<{ name: string }>;
+}
+
+interface UserRepo {
+  fullName: string;
+  description: string | null;
+  private: boolean;
+  defaultBranch: string;
+  pushedAt: string | null;
 }
 
 const SAMPLE_REPOS: Array<{ repo: string; label: string }> = [
@@ -36,6 +46,9 @@ export function NewProjectDialog({ open, onOpenChange, onCreate }: NewProjectDia
   const [branch, setBranch] = useState('main');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [repos, setRepos] = useState<UserRepo[] | null>(null);
+  const [reposLoading, setReposLoading] = useState(false);
+  const [githubConnected, setGithubConnected] = useState(false);
 
   const reset = () => {
     setStep('import');
@@ -44,7 +57,33 @@ export function NewProjectDialog({ open, onOpenChange, onCreate }: NewProjectDia
     setBranch('main');
     setSubmitting(false);
     setError(null);
+    // Refetch connection state on the next open (user may connect in between).
+    setRepos(null);
   };
+
+  /** Connected GitHub account's repos, newest push first. */
+  useEffect(() => {
+    if (!open || repos !== null) return;
+    setReposLoading(true);
+    fetch('/api/settings/github/repos', { cache: 'no-store' })
+      .then(async (res) => {
+        if (!res.ok) {
+          // 400 = no connection (or dead token) — manual mode + connect hint.
+          setGithubConnected(false);
+          return [] as UserRepo[];
+        }
+        setGithubConnected(true);
+        const body = await res.json();
+        return (body?.data?.repos ?? []) as UserRepo[];
+      })
+      .then((r) => setRepos(r))
+      .catch(() => {
+        setGithubConnected(false);
+        setRepos([]);
+      })
+      .finally(() => setReposLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, repos]);
 
   /** Accept "owner/name" or a full GitHub URL; derive the project name. */
   const handleSelectRepo = (r: string) => {
@@ -113,27 +152,77 @@ export function NewProjectDialog({ open, onOpenChange, onCreate }: NewProjectDia
                   Import
                 </Button>
               </div>
+              {githubConnected === false && (
+                <p className="rounded-md bg-secondary/30 px-3 py-2 text-xs text-muted-foreground">
+                  Paste a repo URL, or{' '}
+                  <Link
+                    href="/dashboard/settings/git"
+                    className="font-medium text-primary underline underline-offset-2"
+                  >
+                    connect your GitHub account
+                  </Link>{' '}
+                  to auto-deploy on pushes.
+                </p>
+              )}
               {error && (
                 <p className="rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">
                   {error}
                 </p>
               )}
-              <div className="space-y-2 pt-1">
-                {SAMPLE_REPOS.map((r) => (
-                  <button
-                    key={r.repo}
-                    type="button"
-                    onClick={() => handleSelectRepo(r.repo)}
-                    className="flex w-full items-center gap-3 rounded-lg border border-border/60 p-3 text-left transition-colors hover:border-primary/40 hover:bg-secondary/30"
-                  >
-                    <Github className="h-5 w-5 text-muted-foreground" />
-                    <span className="flex-1 text-left">
-                      <span className="block text-sm font-medium">{r.label}</span>
-                      <span className="block text-xs text-muted-foreground">{r.repo}</span>
-                    </span>
-                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                  </button>
-                ))}
+              <div className="max-h-72 space-y-2 overflow-y-auto pt-1">
+                {reposLoading ? (
+                  <div className="flex items-center justify-center gap-2 rounded-lg border border-border/60 p-4 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading your repositories…
+                  </div>
+                ) : repos && repos.length > 0 ? (
+                  repos.map((r) => (
+                    <button
+                      key={r.fullName}
+                      type="button"
+                      onClick={() => {
+                        if (r.defaultBranch) setBranch(r.defaultBranch);
+                        handleSelectRepo(r.fullName);
+                      }}
+                      className="flex w-full items-center gap-3 rounded-lg border border-border/60 p-3 text-left transition-colors hover:border-primary/40 hover:bg-secondary/30"
+                    >
+                      <Github className="h-5 w-5 shrink-0 text-muted-foreground" />
+                      <span className="flex-1 overflow-hidden text-left">
+                        <span className="flex items-center gap-1.5">
+                          <span className="block truncate font-mono text-sm font-medium">
+                            {r.fullName}
+                          </span>
+                          {r.private && (
+                            <Lock className="h-3 w-3 shrink-0 text-muted-foreground" />
+                          )}
+                        </span>
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {r.description ?? '—'}
+                        </span>
+                      </span>
+                      <Badge variant="outline" className="gap-1 font-mono text-[10px]">
+                        <GitBranch className="h-3 w-3" />
+                        {r.defaultBranch}
+                      </Badge>
+                    </button>
+                  ))
+                ) : (
+                  SAMPLE_REPOS.map((r) => (
+                    <button
+                      key={r.repo}
+                      type="button"
+                      onClick={() => handleSelectRepo(r.repo)}
+                      className="flex w-full items-center gap-3 rounded-lg border border-border/60 p-3 text-left transition-colors hover:border-primary/40 hover:bg-secondary/30"
+                    >
+                      <Github className="h-5 w-5 text-muted-foreground" />
+                      <span className="flex-1 text-left">
+                        <span className="block text-sm font-medium">{r.label}</span>
+                        <span className="block text-xs text-muted-foreground">{r.repo}</span>
+                      </span>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                    </button>
+                  ))
+                )}
               </div>
             </form>
           </>

@@ -105,3 +105,29 @@ npm install
 psql < db/schema.sql               # or paste into Supabase SQL editor
 npm run dev
 ```
+
+## Login (Supabase Auth)
+
+`/dashboard` is behind `middleware.ts` — unauthenticated visits redirect to
+`/login`, modeled on quickfeed's protected routes. Sign-in methods match
+quickfeed's login page: **Google OAuth** and **email magic link** (both exchange
+through `/api/auth/callback`).
+
+Env (in `.env.local`) — server-only, never exposed to the browser:
+
+```
+SUPABASE_URL            # already used by the data layer
+SUPABASE_ANON_KEY       # anon/publishable key (NOT the service role key)
+```
+
+Auth flows (Google + magic link) run through `/api/auth/*` route handlers so
+neither the anon key nor the service-role key ships in the JS bundle. Do not
+rename these to `NEXT_PUBLIC_*` — RLS policies in `db/schema.sql` are still
+open (`using (true)`), so a browser-side Supabase key would be exploitable.
+
+In the Supabase dashboard (Authentication):
+
+1. **URL Configuration** — set Site URL and add `http://localhost:3000/api/auth/callback`
+   plus the callback URL of each deployed environment to **Redirect URLs**.
+2. **Providers → Google** — add the OAuth client ID/secret from Google Cloud
+   Console (authorized redirect URI: `https://<ref>.supabase.co/auth/v1/callback`).

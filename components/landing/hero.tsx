@@ -17,40 +17,36 @@ import { Reveal } from '@/components/landing/reveal';
 export function Hero() {
   return (
     <section className="relative overflow-hidden border-b border-border/60">
-      <div className="absolute inset-0 bg-grid mask-fade-b opacity-40" />
-      <div className="absolute left-1/2 top-0 -z-10 h-[480px] w-[480px] -translate-x-1/2 rounded-full bg-primary/20 blur-[120px]" />
-      <div className="absolute right-1/4 top-32 -z-10 h-[320px] w-[320px] rounded-full bg-accent/20 blur-[100px]" />
+      <div className="absolute inset-0 bg-grid mask-fade-b opacity-20" />
+      <div className="absolute left-1/2 top-[-160px] -z-10 h-[420px] w-[720px] -translate-x-1/2 rounded-full bg-primary/10 blur-[140px]" />
 
       <div className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8 lg:py-32">
         <div className="mx-auto max-w-3xl text-center">
-          <Reveal className="mb-6">
-            <div className="inline-flex items-center gap-2 rounded-full border border-border/80 bg-card/60 px-4 py-1.5 text-sm text-muted-foreground backdrop-blur">
+          <Reveal className="mb-7">
+            <p className="inline-flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
               </span>
-              No platform markup on compute or bandwidth
-            </div>
+              Deploys that live in your AWS account
+            </p>
           </Reveal>
 
           <h1
-            className="animate-fade-up text-balance text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl"
+            className="animate-fade-up text-balance text-5xl leading-[1.04] tracking-[-0.02em] sm:text-6xl lg:text-7xl"
             style={{ animationDelay: '80ms' }}
           >
-            Vercel-grade DX.
+            The DX of Vercel.
             <br />
-            <span className="bg-gradient-to-r from-primary via-primary to-accent bg-clip-text text-transparent">
-              Running on your AWS.
-            </span>
+            <em className="italic text-primary">The bill of AWS.</em>
           </h1>
 
           <p
-            className="animate-fade-up mx-auto mt-6 max-w-2xl text-balance text-lg text-muted-foreground"
+            className="animate-fade-up mx-auto mt-7 max-w-2xl text-balance text-lg text-muted-foreground"
             style={{ animationDelay: '180ms' }}
           >
-            Deploy Next.js apps with git push, preview branches, custom domains,
-            and instant rollbacks — all inside your own AWS account. You pay
-            pure AWS costs. No surprise bills.
+            Reduce your hosting cost by directly using AWS.
+            We give you full DX connect your own aws.
           </p>
 
           <div
@@ -58,13 +54,13 @@ export function Hero() {
             style={{ animationDelay: '280ms' }}
           >
             <Link href="/dashboard">
-              <Button size="lg" className="group w-full sm:w-auto">
+              <Button size="lg" className="group w-full rounded-full px-7 sm:w-auto">
                 Deploy your first app
                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Button>
             </Link>
             <Link href="/#how-it-works">
-              <Button variant="outline" size="lg" className="w-full sm:w-auto">
+              <Button variant="outline" size="lg" className="w-full rounded-full px-7 sm:w-auto">
                 See how it works
               </Button>
             </Link>
@@ -102,7 +98,7 @@ export function Hero() {
 
 function TerminalMockup() {
   return (
-    <div className="overflow-hidden rounded-xl border border-border/80 bg-card/80 shadow-2xl backdrop-blur glow-primary">
+    <div className="overflow-hidden rounded-2xl border border-border/80 bg-card/80 shadow-2xl backdrop-blur glow-primary">
       <div className="flex items-center gap-2 border-b border-border/60 bg-secondary/40 px-4 py-3">
         <div className="flex gap-1.5">
           <div className="h-3 w-3 rounded-full bg-destructive/80" />
@@ -124,32 +120,32 @@ function TerminalMockup() {
           className="animate-fade-up pl-4 text-muted-foreground"
           style={{ animationDelay: '700ms' }}
         >
-          <span className="text-accent">→</span> Detecting Next.js project…
+          <span className="text-ember">→</span> Detecting Next.js project…
         </div>
         <div
           className="animate-fade-up pl-4 text-muted-foreground"
           style={{ animationDelay: '800ms' }}
         >
-          <span className="text-accent">→</span> Building with isolated
+          <span className="text-ember">→</span> Building with isolated
           container…
         </div>
         <div
           className="animate-fade-up pl-4 text-muted-foreground"
           style={{ animationDelay: '900ms' }}
         >
-          <span className="text-accent">→</span> Uploading static assets to S3…
+          <span className="text-ember">→</span> Uploading static assets to S3…
         </div>
         <div
           className="animate-fade-up pl-4 text-muted-foreground"
           style={{ animationDelay: '1000ms' }}
         >
-          <span className="text-accent">→</span> Deploying SSR to Lambda…
+          <span className="text-ember">→</span> Deploying SSR to Lambda…
         </div>
         <div
           className="animate-fade-up pl-4 text-muted-foreground"
           style={{ animationDelay: '1100ms' }}
         >
-          <span className="text-accent">→</span> Invalidating CloudFront CDN…
+          <span className="text-ember">→</span> Invalidating CloudFront CDN…
         </div>
         <div
           className="animate-fade-up flex items-center gap-2 pt-1 text-success"
@@ -165,7 +161,7 @@ function TerminalMockup() {
           <span className="inline-flex items-center gap-1.5 rounded-md bg-primary/10 px-2.5 py-1 text-xs text-primary">
             <Globe className="h-3.5 w-3.5" /> yourapp.com/~/myapp
           </span>
-          <span className="inline-flex items-center gap-1.5 rounded-md bg-accent/10 px-2.5 py-1 text-xs text-accent">
+          <span className="inline-flex items-center gap-1.5 rounded-md bg-success/10 px-2.5 py-1 text-xs text-success">
             <GitBranch className="h-3.5 w-3.5" /> yourapp.com/~/preview-pr-42
           </span>
           <span className="inline-flex items-center gap-1.5 rounded-md bg-secondary px-2.5 py-1 text-xs text-muted-foreground">

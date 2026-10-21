@@ -3,13 +3,14 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  Cloud,
   LayoutGrid,
   Settings,
   Activity,
   ChevronLeft,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { DashboardUserBlock } from '@/components/dashboard/user-block';
+import { OpenHostMark } from '@/components/logo';
 
 const navItems = [
   { label: 'Projects', href: '/dashboard', icon: LayoutGrid },
@@ -24,9 +25,7 @@ export function DashboardSidebar() {
     <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-border/60 bg-card/30 md:flex">
       <div className="flex h-16 items-center gap-2 border-b border-border/60 px-5">
         <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Cloud className="h-4 w-4" />
-          </div>
+          <OpenHostMark size={28} />
           <span className="font-semibold tracking-tight">OpenHost</span>
         </Link>
       </div>
@@ -70,14 +69,8 @@ export function DashboardSidebar() {
           Back to site
         </Link>
 
-        <div className="mt-4 flex items-center gap-3 rounded-lg bg-secondary/40 p-3">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-xs font-bold text-primary-foreground">
-            KV
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">Kalash Vasaniya</p>
-            <p className="truncate text-xs text-muted-foreground">Indie plan</p>
-          </div>
+        <div className="mt-4">
+          <DashboardUserBlock />
         </div>
       </div>
     </aside>

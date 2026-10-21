@@ -2,65 +2,75 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================================
+   Theme: "Warm Ink" — extracted from excerpt-rho.vercel.app (2026-10-21).
+   Palette ground #0A0A0A / raise #131313 / line #232323 / ink #F4F3F1 /
+   paper #F1F0DD / ember #FF4D0F / ok #5BD08A / warn #E8C77A / bad #FF4D4D.
+   Contrast: ink·ground 17.9 / dim·ground 5.9 / ground·paper 17.2 /
+   ember·ground 6.0 / ok·ground 10.2 / warn·ground 12.1 / bad·ground 6.1.
+   Type: Archivo (body) · Instrument Serif (display) · IBM Plex Mono (labels).
+   ============================================================================ */
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 158 64% 40%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 210 40% 94%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 210 40% 94%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 199 89% 48%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 214 32% 88%;
-    --input: 214 32% 88%;
-    --ring: 158 64% 40%;
-    --chart-1: 158 64% 40%;
-    --chart-2: 199 89% 48%;
-    --chart-3: 43 74% 66%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-    --radius: 0.75rem;
+    --background: 0 0% 4%;            /* #0A0A0A — excerpt --ground */
+    --foreground: 40 12% 95%;         /* #F4F3F1 — excerpt --ink */
+    --card: 0 0% 7%;                  /* #131313 — excerpt --raise */
+    --card-foreground: 40 12% 95%;
+    --popover: 0 0% 7%;
+    --popover-foreground: 40 12% 95%;
+    --primary: 57 42% 91%;            /* #F1F0DD — excerpt --paper (cream CTAs) */
+    --primary-foreground: 0 0% 4%;
+    --secondary: 0 0% 10%;            /* #1A1A1A — hover surface */
+    --secondary-foreground: 40 12% 95%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 55%;     /* #8C8C8C — excerpt --dim */
+    --accent: 80 14% 9%;              /* #171913 — warm raise (hover fills) */
+    --accent-foreground: 40 12% 95%;
+    --destructive: 0 100% 65%;        /* #FF4D4D — excerpt --bad */
+    --destructive-foreground: 0 0% 4%;
+    --border: 0 0% 14%;               /* #232323 — excerpt --line */
+    --input: 0 0% 14%;
+    --ring: 57 42% 91%;
+    --ember: 16 100% 53%;             /* #FF4D0F — excerpt --ember accent */
+    --chart-1: 57 42% 91%;            /* cream */
+    --chart-2: 144 55% 59%;           /* #5BD08A ok */
+    --chart-3: 42 71% 69%;            /* #E8C77A warn */
+    --chart-4: 16 100% 53%;           /* ember */
+    --chart-5: 0 0% 55%;              /* dim */
+    --radius: 0.875rem;               /* excerpt --r 14px */
 
-    --success: 142 71% 45%;
-    --warning: 38 92% 50%;
+    --success: 144 55% 59%;           /* #5BD08A — excerpt --ok */
+    --warning: 42 71% 69%;            /* #E8C77A — excerpt --warn */
   }
   .dark {
-    --background: 222 47% 7%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 10%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222 47% 10%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 158 64% 42%;
-    --primary-foreground: 222 47% 7%;
-    --secondary: 217 33% 16%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217 33% 16%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 199 89% 52%;
-    --accent-foreground: 222 47% 7%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217 33% 18%;
-    --input: 217 33% 20%;
-    --ring: 158 64% 42%;
-    --chart-1: 158 64% 42%;
-    --chart-2: 199 89% 52%;
-    --chart-3: 43 74% 66%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --background: 0 0% 4%;
+    --foreground: 40 12% 95%;
+    --card: 0 0% 7%;
+    --card-foreground: 40 12% 95%;
+    --popover: 0 0% 7%;
+    --popover-foreground: 40 12% 95%;
+    --primary: 57 42% 91%;
+    --primary-foreground: 0 0% 4%;
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 40 12% 95%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 55%;
+    --accent: 80 14% 9%;
+    --accent-foreground: 40 12% 95%;
+    --destructive: 0 100% 65%;
+    --destructive-foreground: 0 0% 4%;
+    --border: 0 0% 14%;
+    --input: 0 0% 14%;
+    --ring: 57 42% 91%;
+    --ember: 16 100% 53%;
+    --chart-1: 57 42% 91%;
+    --chart-2: 144 55% 59%;
+    --chart-3: 42 71% 69%;
+    --chart-4: 16 100% 53%;
+    --chart-5: 0 0% 55%;
 
-    --success: 142 71% 45%;
-    --warning: 38 92% 50%;
+    --success: 144 55% 59%;
+    --warning: 42 71% 69%;
   }
 }
 
@@ -78,6 +88,16 @@
   ::selection {
     background: hsl(var(--primary) / 0.3);
     color: hsl(var(--foreground));
+  }
+  /* Excerpt-style film grain: a fixed 3%-opacity noise layer over everything. */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    pointer-events: none;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='128' height='128' filter='url(%23n)'/%3E%3C/svg%3E");
   }
   * {
     scrollbar-width: thin;
@@ -118,10 +138,13 @@
     mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
   }
   .glow-primary {
-    box-shadow: 0 0 80px -20px hsl(var(--primary) / 0.5);
+    box-shadow: 0 0 80px -20px hsl(var(--primary) / 0.3);
   }
   .glow-accent {
-    box-shadow: 0 0 80px -20px hsl(var(--accent) / 0.5);
+    box-shadow: 0 0 80px -20px hsl(var(--ember) / 0.4);
+  }
+  .shadow-header {
+    box-shadow: 0 1px 12px -4px hsl(0 0% 0% / 0.35);
   }
 }
 

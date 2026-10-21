@@ -2,11 +2,11 @@
 
 import Link from 'next/link';
 import {
-  Cloud,
   Github,
   Twitter,
   Linkedin,
 } from 'lucide-react';
+import { OpenHostMark } from '@/components/logo';
 
 const columns = [
   {
@@ -51,9 +51,7 @@ export function Footer() {
         <div className="grid grid-cols-2 gap-8 md:grid-cols-5">
           <div className="col-span-2">
             <Link href="/" className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <Cloud className="h-5 w-5" />
-              </div>
+              <OpenHostMark size={32} />
               <span className="text-lg font-semibold tracking-tight">
                 OpenHost
               </span>

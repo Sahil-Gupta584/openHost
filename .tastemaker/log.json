@@ -1,0 +1,23 @@
+[
+  {
+    "ts": "2026-10-21",
+    "screen": "landing + global theme",
+    "source": "excerpt-rho.vercel.app token extraction",
+    "macrostructure": "unchanged (existing Feature Stack landing) — theme-transfer pass only",
+    "archetypes": {
+      "hero": "centered serif statement + mono eyebrow + twin pill CTAs + terminal mockup",
+      "section_head": "mono uppercase eyebrow + serif display title",
+      "nav": "logo-left / center links / ghost + cream pill CTA"
+    },
+    "changed": [
+      "app/globals.css (tokens: ground/raise/line/ink/paper/ember/ok/warn/bad)",
+      "app/layout.tsx (Archivo + IBM Plex Mono + Instrument Serif)",
+      "tailwind.config.ts (ember color, display font family)",
+      "hero.tsx (serif headline, mono eyebrow, pill CTAs, no gradient text)",
+      "section-heading.tsx (mono eyebrow, serif title)",
+      "navbar.tsx + cta.tsx (pill CTAs, serif CTA heading)",
+      "login/page.tsx (serif title, ember glow)",
+      "usage.tsx + user-block.tsx (semantic chart colors, solid avatar)"
+    ]
+  }
+]

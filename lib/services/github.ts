@@ -40,6 +40,14 @@ export async function storedGithubToken(): Promise<string | null> {
 
 /** Validates a token by asking GitHub who it belongs to. */
 export async function testToken(token: string): Promise<{ login: string } | null> {
+  const user = await tokenIdentity(token);
+  return user ? { login: user.login } : null;
+}
+
+/** Who does this token belong to? Includes avatar for the account UI. */
+export async function tokenIdentity(
+  token: string
+): Promise<{ login: string; name: string | null; avatarUrl: string } | null> {
   const res = await fetch('https://api.github.com/user', {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -48,7 +56,77 @@ export async function testToken(token: string): Promise<{ login: string } | null
     },
   });
   if (!res.ok) return null;
-  return (await res.json()) as { login: string };
+  const u = (await res.json()) as { login: string; name: string | null; avatar_url: string };
+  return { login: u.login, name: u.name, avatarUrl: u.avatar_url };
+}
+
+export interface GithubRepo {
+  fullName: string;
+  description: string | null;
+  private: boolean;
+  defaultBranch: string;
+  pushedAt: string | null;
+}
+
+/** Repositories the connected token can see, newest push first. */
+export async function listUserRepos(token: string): Promise<GithubRepo[]> {
+  const res = await fetch(
+    'https://api.github.com/user/repos?sort=pushed&per_page=100',
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github+json',
+        'User-Agent': 'openhost',
+      },
+    }
+  );
+  if (!res.ok) return [];
+  const rows = (await res.json()) as Array<{
+    full_name: string;
+    description: string | null;
+    private: boolean;
+    default_branch: string;
+    pushed_at: string | null;
+    fork: boolean;
+  }>;
+  return rows
+    .filter((r) => !r.fork || !r.private)
+    .map((r) => ({
+      fullName: r.full_name,
+      description: r.description,
+      private: r.private,
+      defaultBranch: r.default_branch,
+      pushedAt: r.pushed_at,
+    }));
+}
+
+/**
+ * Register a push webhook on the repo so pushes trigger auto deploys.
+ * Returns false if GitHub rejects (token lacks admin or repo gone) — callers
+ * treat it as non-fatal: the project still deploys manually.
+ */
+export async function attachRepoWebhook(opts: {
+  token: string;
+  repo: string; // owner/name
+  targetUrl: string;
+  secret: string;
+}): Promise<boolean> {
+  const res = await fetch(`https://api.github.com/repos/${opts.repo}/hooks`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${opts.token}`,
+      Accept: 'application/vnd.github+json',
+      'User-Agent': 'openhost',
+    },
+    body: JSON.stringify({
+      name: 'webhook',
+      active: true,
+      events: ['push'],
+      config: { url: opts.targetUrl, content_type: 'json', secret: opts.secret },
+    }),
+  });
+  // 422 = hook already exists → effective success.
+  return res.ok || res.status === 422;
 }
 
 // ---- webhooks -----------------------------------------------------------------
