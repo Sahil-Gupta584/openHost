@@ -47,6 +47,16 @@ export async function codeBuildCapacity(creds: AwsCredentials): Promise<number> 
 
 /** Compile our TypeScript pipeline into the single JS file Lambda runs. */
 async function bundleBuilder(): Promise<Buffer> {
+  // Production: the zip is generated before `next build` (scripts/
+  // build-builder-bundle.mjs) and traced into the deploy function — esbuild
+  // cannot run over repo sources at runtime, because serverless carry only a
+  // traced subset of node_modules and files (Vercel "Could not resolve" ×50).
+  try {
+    return await fs.promises.readFile(path.resolve(process.cwd(), 'lib/build/builder.zip'));
+  } catch {
+    // Dev fallback: full node_modules present, compile on the fly.
+  }
+
   const esbuild = (await import('esbuild')) as typeof import('esbuild');
   const { tmpdir } = await import('os');
   const out = path.join(fs.realpathSync(tmpdir()), 'openhost-builder-bundle.js');

@@ -7,13 +7,16 @@
 
 # testing
 /coverage
-scripts
+
 # next.js
 /.next/
 /out/
 
 # production
 /build
+
+# Generated build artifact — builder zip for the ephemeral Lambda builder.
+/lib/build/builder.zip
 
 # video production (rendered locally)
 /hyperframe
