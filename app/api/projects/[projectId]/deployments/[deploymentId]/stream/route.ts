@@ -3,7 +3,9 @@ import { subscribe, history } from '@/lib/services/deploy-bus';
 
 export const dynamic = 'force-dynamic';
 // Streams live build logs for one deployment (Server-Sent Events).
-export const maxDuration = 900;
+// 300s = Hobby plan max for serverless functions; when the function is cut,
+// native EventSource auto-reconnects and this route replays buffered history.
+export const maxDuration = 300;
 
 type Ctx = { params: { projectId: string; deploymentId: string } };
 
