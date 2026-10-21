@@ -69,7 +69,9 @@ export async function startDeployment(input: StartDeployInput): Promise<string> 
     projectId: project.id,
     commitHash: 'pending',
     branch: project.branch,
-    status: executor === 'local' ? 'building' : 'queued',
+    // Lambda starts building within the pipeline's first lines — record it as
+    // building so the deploy log never shows the CodeBuild parking line.
+    status: executor === 'codebuild' ? 'queued' : 'building',
     buildLogs: '',
   });
 
