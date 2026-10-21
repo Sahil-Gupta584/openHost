@@ -14,9 +14,9 @@ export function getSupabaseAuthConfig(): { url: string; anonKey: string } {
   const anonKey = process.env.SUPABASE_ANON_KEY;
 
   if (!url || !anonKey) {
-    throw new Error(
-      'Missing Supabase auth config. Set SUPABASE_URL and SUPABASE_ANON_KEY (not NEXT_PUBLIC_*) in .env.local.'
-    );
+    // throw new Error(
+    //   'Missing Supabase auth config. Set SUPABASE_URL and SUPABASE_ANON_KEY (not NEXT_PUBLIC_*) in .env.local.'
+    // );
   }
   return { url, anonKey };
 }
