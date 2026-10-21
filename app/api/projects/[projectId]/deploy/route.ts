@@ -4,7 +4,10 @@ import { startDeployment } from '@/lib/services/deploy-runner';
 import { getLatestDeployment } from '@/lib/supabase/queries/deployments';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+// The orchestrator waits for the builder to finish (up to ~14 min for the
+// ephemeral build sandbox). 300s = Hobby plan max; long builds still complete
+// inside the builder itself — only the finalize step would need a re-run.
+export const maxDuration = 300;
 
 type Ctx = { params: { projectId: string } };
 

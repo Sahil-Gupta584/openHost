@@ -357,6 +357,12 @@ async function runPipeline(
       })
       .catch(() => undefined);
   } finally {
+    // Sync the tail of the log that arrived after the terminal row write,
+    // then stop the incremental flusher.
+    log.stop();
+    await deploymentsRepo
+      .updateDeployment(deploymentId, { build_logs: logText(deploymentId) })
+      .catch(() => undefined);
     deployBus.publishEvent(deploymentId, {
       type: 'status',
       status,
@@ -372,10 +378,39 @@ async function runPipeline(
 
 type LogEmit = (level: 'info' | 'success' | 'error', text: string) => void;
 
-function makeLogger(deploymentId: string): LogEmit {
-  return (level, text) => {
+interface LoggerHandle extends LogEmit {
+  /** Stop the incremental DB flusher (terminal row write takes over). */
+  stop: () => void;
+}
+
+/**
+ * Logs go to the in-memory SSE bus (same-instance replay) AND flush to
+ * Supabase every 500ms — on Vercel the deploy orchestrator and the /stream
+ * route are DIFFERENT Lambda instances, so the DB is the only reliable
+ * channel across them. Flushing incrementally (not just at terminal
+ * transitions) is what makes the live build log work off-process.
+ */
+function makeLogger(deploymentId: string): LoggerHandle {
+  let timer: ReturnType<typeof setInterval> | null = setInterval(
+    () =>
+      deploymentsRepo
+        .updateDeployment(deploymentId, { build_logs: logText(deploymentId) })
+        .catch(() => undefined), // stream still works same-instance; final row holds last write
+    500
+  );
+
+  const emit = ((level: 'info' | 'success' | 'error', text: string) => {
     deployBus.publishEvent(deploymentId, { type: 'log', level, text });
+    if (deployBus.history(deploymentId).length >= 400) emit.stop(); // cap DB churn on pathological logs
+  }) as LoggerHandle;
+
+  emit.stop = () => {
+    if (timer) {
+      clearInterval(timer);
+      timer = null;
+    }
   };
+  return emit;
 }
 
 /** Full log so far — persisted to Supabase at status transitions. */

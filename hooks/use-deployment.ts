@@ -74,6 +74,7 @@ export function useDeployment(projectId: string, deploymentId: string) {
       `/api/projects/${projectId}/deployments/${deploymentId}/stream`
     );
     setSource(es);
+    let terminal = false;
 
     es.addEventListener('deploy', (e) => {
       const event = JSON.parse((e as MessageEvent).data) as AnyDeployEvent;
@@ -85,11 +86,29 @@ export function useDeployment(projectId: string, deploymentId: string) {
       });
       if (event.type === 'status') {
         setStatus(event.status);
-        if (event.status === 'ready' || event.status === 'error') es.close();
+        if (event.status === 'ready' || event.status === 'error') {
+          terminal = true;
+          es.close();
+        }
       }
     });
 
-    return () => es.close();
+    // Belt & braces: re-seed from the GET endpoint every 6s until the run is
+    // terminal — the SSE connection can drop (function timeout, proxy
+    // buffering) between serverless instances, and the GET row always carries
+    // the current status plus the flushed log text.
+    const safety = setInterval(() => {
+      if (terminal) {
+        clearInterval(safety);
+        return;
+      }
+      void bootstrap();
+    }, 6000);
+
+    return () => {
+      es.close();
+      clearInterval(safety);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, deploymentId]);
 

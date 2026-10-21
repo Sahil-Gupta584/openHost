@@ -27,8 +27,10 @@ export function DeployLog({ projectId, projectTitle, deploymentId }: DeployLogPr
   const logBoxRef = useRef<HTMLDivElement>(null);
   const [elapsed, setElapsed] = useState(0);
 
-  const startedAt =
-    events.find((e): e is LogEvent => e.type === 'log')?.at ?? new Date().toISOString();
+  // Stable fallback while no event has arrived yet — recomputing `new Date()`
+  // per render froze the counter at ~1s (the "hallucinating" timer).
+  const [mountAt] = useState(() => Date.now());
+  const startedAt = events.find((e) => e.type === 'log')?.at ?? new Date(mountAt).toISOString();
 
   useEffect(() => {
     if (status !== 'building' && status !== 'queued') return;
