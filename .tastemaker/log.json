@@ -19,5 +19,24 @@
       "login/page.tsx (serif title, ember glow)",
       "usage.tsx + user-block.tsx (semantic chart colors, solid avatar)"
     ]
+  },
+  {
+    "ts": "2026-10-21",
+    "screen": "hyperframe/ (launch video)",
+    "source": "quickfeed remotion workflow + style-lock tokens",
+    "macrostructure": "new Remotion production — 5 scenes joined by 20f fades, 1920×1080@30, 1045 frames (~35s)",
+    "archetypes": {
+      "hook": "mark pop + serif statement + mono eyebrow + mono footer strip",
+      "data_scene": "raise card, line border, mono uppercase labels, count-up numbers, race-of-bars",
+      "terminal": "raise card w/ traffic dots, staggered mono pipeline lines, ok-colored success line"
+    },
+    "changed": [
+      "hyperframe/src/theme.ts (warm-ink token mirror of style-lock)",
+      "hyperframe/src/fonts.ts (Archivo / Instrument Serif normal+italic / IBM Plex Mono via @remotion/google-fonts)",
+      "hyperframe/src/atoms.tsx (GroundFill w/ grain, Mark from favicon.png, Eyebrow, Headline)",
+      "hyperframe/src/scenes/Scene1Hook.tsx … Scene5Outro.tsx",
+      "hyperframe/src/OpenHostLaunch.tsx + Root.tsx + index.ts (TransitionSeries composition)",
+      "hyperframe/public/favicon.png (byte-identical copy of repo logo source ../public/favicon.ico)"
+    ]
   }
 ]
