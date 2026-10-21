@@ -2,6 +2,7 @@ import {
   GetRoleCommand,
   CreateRoleCommand,
   PutRolePolicyCommand,
+  UpdateAssumeRolePolicyCommand,
 } from '@aws-sdk/client-iam';
 import type { AwsCredentials } from './config';
 import { OPENHOST_STACK_TAGS } from './config';
@@ -43,6 +44,7 @@ export async function basicRoleArn(creds: AwsCredentials, name: string): Promise
 
   try {
     const res = await iam.send(new GetRoleCommand({ RoleName: name }));
+    await ensureLambdaTrust(creds, name);
     return res.Role!.Arn!;
   } catch (e: unknown) {
     // SDK v3 surfaces IAM "not found" as NoSuchEntityException (CLI legacy: NoSuchEntity)
@@ -136,13 +138,34 @@ export async function codeBuildRoleArn(
   return { arn: `arn:aws:iam::${await callerAccount(creds)}:role/${name}`, created: true };
 }
 
-/** The Lambda build sandbox may push artifacts + build-run status files. */
+/** The Lambda build sandbox: s3 artifact IO + its own CloudWatch logs. */
+const BUILDER_POLICY = {
+  Version: '2012-10-17',
+  Statement: [
+    {
+      Effect: 'Allow',
+      Action: ['logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:PutLogEvents'],
+      Resource: 'arn:aws:logs:*:*:*',
+    },
+    {
+      Effect: 'Allow',
+      Action: ['s3:GetObject', 's3:PutObject', 's3:DeleteObject', 's3:ListBucket'],
+      Resource: ['arn:aws:s3:::openhost-*', 'arn:aws:s3:::openhost-*/*'],
+    },
+  ],
+};
+
+/** One shared role for all build sandbox invocations (openhost-builder). */
 export async function builderRoleArn(creds: AwsCredentials): Promise<string> {
   const iam = iamClient(creds);
   const name = 'openhost-builder-role';
 
   try {
     const res = await iam.send(new GetRoleCommand({ RoleName: name }));
+    // The role may predate the Lambda-executor path (created for the CodeBuild
+    // era or by hand) and trust only codebuild.amazonaws.com — reconcile so
+    // CreateFunction doesn't fail with "cannot be assumed by Lambda".
+    await ensureLambdaTrust(creds, name);
     return res.Role!.Arn!;
   } catch (e: unknown) {
     const code = String(
@@ -163,11 +186,43 @@ export async function builderRoleArn(creds: AwsCredentials): Promise<string> {
     new PutRolePolicyCommand({
       RoleName: name,
       PolicyName: 'openhost-builder-basic',
-      PolicyDocument: JSON.stringify(CODEBUILD_POLICY),
+      PolicyDocument: JSON.stringify(BUILDER_POLICY),
     })
   );
 
   return `arn:aws:iam::${await callerAccount(creds)}:role/${name}`;
+}
+
+/**
+ * Make sure an existing role can actually be assumed by Lambda. GetRole
+ * returns the policy URL-encoded; if `lambda.amazonaws.com` isn't in the
+ * trusted principal set, rewrite it to the canonical OpenHost trust policy.
+ */
+async function ensureLambdaTrust(creds: AwsCredentials, name: string): Promise<void> {
+  const iam = iamClient(creds);
+  const res = await iam.send(new GetRoleCommand({ RoleName: name }));
+  let doc: {
+    Statement?: Array<{ Effect?: string; Principal?: { Service?: string | string[] } }>;
+  };
+  try {
+    doc = JSON.parse(decodeURIComponent(res.Role!.AssumeRolePolicyDocument!));
+  } catch {
+    return; // unreadable document → leave as is; Lambda-side retry surfaces the real error
+  }
+  const trusted = (doc.Statement ?? [])
+    .filter((s) => (s.Effect ?? 'Allow').toLowerCase() === 'allow')
+    .some((s) => {
+      const svc = s.Principal?.Service;
+      return (Array.isArray(svc) ? svc : [svc]).includes('lambda.amazonaws.com');
+    });
+  if (trusted) return;
+
+  await iam.send(
+    new UpdateAssumeRolePolicyCommand({
+      RoleName: name,
+      PolicyDocument: JSON.stringify(TRUST_POLICY),
+    })
+  );
 }
 
 // Account id is required to build the ARN for a freshly created role.

@@ -186,19 +186,32 @@ export async function ensureBuilderFunction(
 
   if (!exists) {
     const roleArn = await builderRoleArn(creds);
-    await lambda.send(
-      new CreateFunctionCommand({
-        FunctionName: name,
-        Role: roleArn,
-        Runtime: 'nodejs20.x',
-        Handler: 'index.handler',
-        Code: { S3Bucket: pkg.s3Bucket, S3Key: pkg.s3Key },
-        Timeout: 870,
-        MemorySize: 3008,
-        EphemeralStorage: { Size: 8192 },
-        Tags: { ...OPENHOST_STACK_TAGS },
-      })
-    );
+    // A freshly created role takes seconds to propagate — Lambda validates
+    // trust on create, so retry through the assume-role window (same deal as
+    // deploySiteFunction below).
+    for (let attempt = 1; attempt <= 5; attempt++) {
+      try {
+        await lambda.send(
+          new CreateFunctionCommand({
+            FunctionName: name,
+            Role: roleArn,
+            Runtime: 'nodejs20.x',
+            Handler: 'index.handler',
+            Code: { S3Bucket: pkg.s3Bucket, S3Key: pkg.s3Key },
+            Timeout: 870,
+            MemorySize: 3008,
+            EphemeralStorage: { Size: 8192 },
+            Tags: { ...OPENHOST_STACK_TAGS },
+          })
+        );
+        break;
+      } catch (e: unknown) {
+        const msg = String((e as Error).message ?? '');
+        const notAssumable = /cannot be assumed by Lambda|not authorized to perform: iam:PassRole/.test(msg);
+        if (!notAssumable || attempt === 5) throw e;
+        await new Promise((r) => setTimeout(r, 4_000));
+      }
+    }
   } else {
     await lambda.send(
       new UpdateFunctionConfigurationCommand({
