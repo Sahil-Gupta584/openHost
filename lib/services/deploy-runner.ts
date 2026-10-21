@@ -7,7 +7,7 @@ import { ensureHttpGateway } from '../aws/apigw';
 import { ensureDistribution, invalidatePaths, getDistributionByProject } from '../aws/cloudfront';
 import { resolveGithubToken } from './github';
 import { generateOpenHostBuildspec } from '../build/buildspec';
-import { codeBuildCapacity, runLambdaBuilder } from '../build/lambda-builder';
+import { runLambdaBuilder } from '../build/lambda-builder';
 import { buildRepo, type BuildResult } from '../build/pipeline';
 import { cleanupDir } from '../build/process';
 import { lambdaClient } from '../aws/client';
@@ -33,17 +33,20 @@ type BuildExecutor = 'codebuild' | 'lambda' | 'local';
 
 /**
  * Pick the off-host build executor per deploy:
- *   CodeBuild   — when the account's concurrent-build quota allows it
- *   Lambda      — ephemeral build sandbox (always available)
+ *   Lambda      — ephemeral build sandbox in the user's account (default)
+ *   codebuild   — only when explicitly forced via OPENHOST_BUILD_MODE
  *   local       — dev fallback when no AWS creds exist (builds on this machine)
+ *
+ * We auto-preferred CodeBuild while the account's concurrent-build quota case
+ * was pending, but the Service Quotas probe can report the default value before
+ * AWS actually accepts StartBuild — parking deployments on a false positive.
+ * Until that quota case lands, builds skip CodeBuild entirely.
  */
 async function decideBuildExecutor(): Promise<BuildExecutor> {
   const explicit = process.env.OPENHOST_BUILD_MODE;
   if (explicit === 'codebuild' || explicit === 'lambda' || explicit === 'local') return explicit;
   if (!process.env.AWS_ACCESS_KEY_ID) return 'local';
-  const creds = await resolveCredentials({ region: 'us-east-1' });
-  const capacity = await codeBuildCapacity(creds);
-  return capacity > 0 ? 'codebuild' : 'lambda';
+  return 'lambda';
 }
 
 const buildingUserspace = new Set<string>();
@@ -125,65 +128,62 @@ async function runPipeline(
         ...(await envVarsRepo.envVarsForProject(project.id)),
       };
 
-      // New AWS accounts start at 0 concurrent build capacity while quota
-      // cases are pending — park the deployment as 'queued' and re-poll
-      // every minute instead of failing instantly.
+      // CodeBuild may still refuse StartBuild while the account's
+      // concurrent-build quota case is pending. Never park: run the Lambda
+      // builder instead — same pipeline, artifacts land in the same bucket.
       let buildId: string | null = null;
-      for (let attempt = 1; attempt <= 45; attempt++) {
-        try {
-          buildId = await startBuilderRun(creds, project.id, env);
-          break;
-        } catch (e) {
-          const msg = e instanceof Error ? e.message : String(e);
-          const capacity =
-            /AccountLimitExceededException|Cannot have more than 0 builds in queue|is not supported for projects with environment type/.test(
-              msg
-            );
-          if (!capacity || attempt === 45) {
-            throw new Error(
-              capacity
-                ? 'AWS build capacity not available yet (quota-increase case pending with AWS). The deploy is retried automatically once it is granted.'
-                : msg
-            );
-          }
-          if (attempt === 1) {
-            log(
-              'info',
-              'AWS has not granted build capacity yet — deployment stays queued, re-checking every minute…'
-            );
-          } else if (attempt % 5 === 0) {
-            log('info', `Still waiting for AWS build capacity… (${attempt} checks)`);
-          }
-          await new Promise((r) => setTimeout(r, 60_000));
-        }
+      try {
+        buildId = await startBuilderRun(creds, project.id, env);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        const capacity =
+          /AccountLimitExceededException|Cannot have more than 0 builds in queue|is not supported for projects with environment type/.test(
+            msg
+          );
+        if (!capacity) throw e;
+        log(
+          'info',
+          'AWS CodeBuild not accepting builds yet (quota case pending) — switching to the Lambda builder, no waiting'
+        );
+        await deploymentsRepo
+          .updateDeployment(deploymentId, { status: 'building' })
+          .catch(() => undefined);
+        const build = await runLambdaBuilder(deploymentId, project, creds, bucket, githubToken, log);
+        mode = build.mode;
+        commitHash = build.commitHash;
+        commitMessage = build.commitMessage;
+        author = build.author;
+        artifactsInBucket = true;
+        void localBuild; // nothing to clean up — container was ephemeral
       }
-      if (!buildId) throw new Error('Could not request a build from AWS CodeBuild');
-      log('success', `Build queued: ${buildId}`);
+      if (buildId) {
+        log('success', `Build queued: ${buildId}`);
 
-      const outcome = await waitForCodeBuild(creds, buildId, log, async (cbStatus) => {
-        // CodeBuild queue → we stay 'queued'; first real execution → 'building'
-        if (cbStatus === 'IN_PROGRESS') {
-          await deploymentsRepo
-            .updateDeployment(deploymentId, { status: 'building' })
-            .catch(() => undefined);
+        const outcome = await waitForCodeBuild(creds, buildId, log, async (cbStatus) => {
+          // CodeBuild queue → we stay 'queued'; first real execution → 'building'
+          if (cbStatus === 'IN_PROGRESS') {
+            await deploymentsRepo
+              .updateDeployment(deploymentId, { status: 'building' })
+              .catch(() => undefined);
+          }
+        });
+        if (outcome.status !== 'SUCCEEDED') {
+          throw new Error(`CodeBuild finish status: ${outcome.status} (see log above)`);
         }
-      });
-      if (outcome.status !== 'SUCCEEDED') {
-        throw new Error(`CodeBuild finish status: ${outcome.status} (see log above)`);
-      }
-      log(
-        'success',
-        `CodeBuild ${outcome.status} in ${ms(outcome.durationMs)} — ${
-          outcome.mode === 'static' ? 'static assets' : 'SSR bundle'
-        } in s3://${bucket}/`
-      );
+        log(
+          'success',
+          `CodeBuild ${outcome.status} in ${ms(outcome.durationMs)} — ${
+            outcome.mode === 'static' ? 'static assets' : 'SSR bundle'
+          } in s3://${bucket}/`
+        );
 
-      mode = outcome.mode ?? 'ssr';
-      commitHash = outcome.commitHash ?? 'unknown';
-      commitMessage = outcome.commitMessage;
-      author = outcome.author;
-      artifactsInBucket = true;
-      void localBuild; // nothing to clean up — container was ephemeral
+        mode = outcome.mode ?? 'ssr';
+        commitHash = outcome.commitHash ?? 'unknown';
+        commitMessage = outcome.commitMessage;
+        author = outcome.author;
+        artifactsInBucket = true;
+        void localBuild; // nothing to clean up — container was ephemeral
+      }
     } else if (executor === 'lambda') {
       // ---- build in an ephemeral Lambda sandbox inside the user's account --
       log('info', `Deploying ${project.repo} at "${project.branch}"`);
